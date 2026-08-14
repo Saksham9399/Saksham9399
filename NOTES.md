@@ -46,6 +46,21 @@ To retune the portrait on its own:
 run takes a few minutes and writes `cache/<sha256 of username>.txt`. Later runs
 read that cache and finish quickly. Deleting the cache forces a full recount.
 
+### Why the line count is owner-only
+
+`loc_query` is called with `['OWNER']`. Widening it to include
+`ORGANIZATION_MEMBER` makes it walk the full history of every employer
+repository the token can see, which trips GitHub's undocumented secondary rate
+limit — `recursive_loc` raises on the resulting 403 after about 15 minutes.
+`commit_counter` reads the same cache, so the commit total is owner-scoped too.
+The `Contributed` figure is a plain `totalCount` query, not a history walk, so
+it still spans organisations.
+
+The Commit step runs under `if: always()`. When `recursive_loc` does hit a 403 it
+calls `force_close_file()` to save its partial progress first, and that cache is
+only worth saving if it gets committed — otherwise every re-run starts cold and
+the job can never converge.
+
 ## Keeping the columns aligned
 
 The dot leaders are sized in two places that must agree:

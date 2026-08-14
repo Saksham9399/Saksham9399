@@ -32,6 +32,10 @@ jobs:
           USER_NAME: ${{ secrets.USER_NAME }}
         run: python today.py
       - name: Commit
+        # always(), so that when today.py trips the rate limit the partial LOC
+        # cache it saved still gets committed. Without this every re-run starts
+        # cold and can never make progress.
+        if: always()
         run: |-
           git add .
           git diff
